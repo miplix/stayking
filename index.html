@@ -33,13 +33,19 @@
     button:hover {
         background-color: #45a049;
     }
-    #rewardsOutput {
+    .rewards-output {
         white-space: pre-wrap;
         background-color: white;
         border: 1px solid #ddd;
         padding: 10px;
-        max-height: 400px;
+        height: 200px;
         overflow-y: auto;
+        margin-bottom: 10px;
+        font-size: 14px;
+        transition: background-color 0.3s ease;
+    }
+    .rewards-output.copied {
+        background-color: #ffcccc;
     }
     .adjustment-group {
         display: flex;
@@ -93,8 +99,7 @@
     <button onclick="addAdjustment()">Добавить корректировку</button>
 
     <h2>Результат распределения наград</h2>
-    <pre id="rewardsOutput"></pre>
-    <button onclick="copyRewards()">Копировать</button>
+    <div id="rewardsOutputContainer"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
@@ -159,8 +164,9 @@
 
         function shouldIncludeNFT(title, owner) {
             const excludeWords = ['passport', 'egg', 'yupik - chiter', 'тест', 'boost'];
+            const excludeOwners = ['darai_nft.near', 'darai_collection.near'];
             return !excludeWords.some(word => title ? title.toLowerCase().includes(word.toLowerCase()) : false) &&
-                   owner !== 'darai_nft.near';
+                   !excludeOwners.includes(owner);
         }
 
         async function updateRewards() {
@@ -200,13 +206,34 @@
 
                 let rewardText = '';
                 Object.entries(ownerStakingPower).forEach(([owner, totalPower]) => {
-                    const reward = Math.floor(rewardPerPercent * totalPower);
+                    const reward = (rewardPerPercent * totalPower).toFixed(2);
                     rewardText += `${owner};${reward}\n`;
                 });
 
-                document.getElementById('rewardsOutput').textContent = rewardText;
+                // Split rewards into groups of 100 lines
+                const rewardGroups = rewardText.split('\n').reduce((acc, line, index) => {
+                    if (index % 100 === 0) acc.push('');
+                    acc[acc.length - 1] += line + '\n';
+                    return acc;
+                }, []);
+
+                // Create output fields for each group
+                const container = document.getElementById('rewardsOutputContainer');
+                container.innerHTML = '';
+                rewardGroups.forEach((group, index) => {
+                    const outputField = document.createElement('textarea');
+                    outputField.className = 'rewards-output';
+                    outputField.readOnly = true;
+                    outputField.value = group.trim();
+                    container.appendChild(outputField);
+
+                    const copyButton = document.createElement('button');
+                    copyButton.textContent = 'Копировать';
+                    copyButton.onclick = () => copyRewards(outputField);
+                    container.appendChild(copyButton);
+                });
             } else {
-                document.getElementById('rewardsOutput').textContent = 'Нет доступных данных';
+                document.getElementById('rewardsOutputContainer').innerHTML = '<p>Нет доступных данных</p>';
             }
         }
 
@@ -225,15 +252,11 @@
             button.parentElement.remove();
         }
 
-        function copyRewards() {
-            const rewardsOutput = document.getElementById('rewardsOutput');
-            const textArea = document.createElement('textarea');
-            textArea.value = rewardsOutput.textContent;
-            document.body.appendChild(textArea);
-            textArea.select();
+        function copyRewards(outputField) {
+            outputField.select();
             document.execCommand('copy');
-            document.body.removeChild(textArea);
-            alert('Текст скопирован в буфер обмена!');
+            outputField.setSelectionRange(0, 0);
+            outputField.classList.add('copied');
         }
 
         // Initial update
