@@ -16,6 +16,22 @@
         margin: 0;
         flex-grow: 1;
     }
+    .back-button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: rgba(52, 152, 219, 0.7);
+        color: white;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        border-radius: 20px;
+        transition: background-color 0.3s;
+        margin-right: 20px;
+    }
+    .back-button:hover {
+        background-color: rgba(41, 128, 185, 0.7);
+    }
     .input-group {
         margin-bottom: 15px;
     }
@@ -33,233 +49,222 @@
     button:hover {
         background-color: #45a049;
     }
-    .rewards-output {
+    #rewardsOutput {
         white-space: pre-wrap;
         background-color: white;
         border: 1px solid #ddd;
         padding: 10px;
-        height: 200px;
+        height: 400px;
         overflow-y: auto;
         margin-bottom: 10px;
         font-size: 14px;
-        transition: background-color 0.3s ease;
     }
-    .rewards-output.copied {
-        background-color: #ffcccc;
+    #loading, #error {
+        margin-top: 20px;
+        font-weight: bold;
     }
-    .adjustment-group {
+    #error {
+        color: red;
+    }
+    .additional-power-container {
+        margin-top: 20px;
+    }
+    .additional-power-row {
         display: flex;
         align-items: center;
         margin-bottom: 10px;
     }
-    .remove-adjustment {
+    .additional-power-row input {
+        flex: 1;
+        margin-right: 10px;
+    }
+    .delete-button {
         background-color: #f44336;
         color: white;
         border: none;
-        padding: 5px 10px;
         cursor: pointer;
-        margin-left: 10px;
+        padding: 5px 10px;
+        font-size: 14px;
     }
-    .back-button {
-        padding: 10px 20px;
-        font-size: 16px;
-        background-color: rgba(52, 152, 219, 0.7);
+    .add-button {
+        background-color: #4CAF50;
         color: white;
         border: none;
         cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-        border-radius: 20px;
-        transition: background-color 0.3s;
-        margin-right: 20px;
+        padding: 10px 20px;
+        font-size: 16px;
+        margin-top: 10px;
     }
-    .back-button:hover {
-        background-color: rgba(41, 128, 185, 0.7);
-    }
-</style></head><body>
+</style></head>
+<body>
     <div class="header">
         <a href="https://miplix.github.io/servises/" class="back-button">Назад</a>
-        <h1>Калькулятор наград NFT</h1>
+        <h1>NFT Rewards Calculator</h1>
     </div>
 
     <div class="input-group">
         <label for="allocationInput">Общая аллокация:</label>
         <input type="number" id="allocationInput" value="100000000">
-        <button onclick="updateRewards()">Обновить</button>
     </div>
 
-    <div id="adjustments">
-        <div class="adjustment-group">
-            <input type="text" placeholder="Адрес" class="address-input">
-            <input type="number" placeholder="Процент" class="percentage-input">
-            <button class="remove-adjustment" onclick="removeAdjustment(this)">X</button>
-        </div>
+    <div class="additional-power-container">
+        <h3>Добавочная мощность</h3>
+        <div id="additionalPowerList"></div>
+        <button class="add-button" onclick="addAdditionalPowerRow()">Добавить</button>
     </div>
 
-    <button onclick="addAdjustment()">Добавить корректировку</button>
+    <button onclick="calculateRewards()">Рассчитать награды</button>
 
-    <h2>Результат распределения наград(по 100 адрессов)</h2>
-    <div id="rewardsOutputContainer"></div>
+    <h2>Результат распределения наград</h2>
+    <div id="rewardsOutput"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <div id="loading" style="display: none;">Загрузка данных...</div>
+    <div id="error" style="display: none;"></div>
+
     <script>
-        async function fetchNFTData() {
-            const url = 'https://graph.mintbase.xyz/mainnet';
-            const query = `
-                query {
-                    mb_views_nft_tokens(
-                        where: {nft_contract_id: {_eq: "darai.mintbase1.near"}}
-                    ) {
-                        owner
-                        title
+        let allNFTs = [];
+        let additionalPowerRows = 0;
+
+        async function fetchNFTs() {
+            let page = 1;
+            const perPage = 250;
+            let hasMore = true;
+            const loadingElement = document.getElementById('loading');
+            const errorElement = document.getElementById('error');
+            
+            const excludedOwners = [
+                '0000000000000000000000000000000000000000000000000000000000000000',
+                'darai_nft.near',
+                'darai_collection.near'
+            ];
+
+            const excludedTitles = ['egg', 'passport', 'Yupik - Chiter', 'Chest', 'Press', 'тест', 'boost', 'mystical'];
+
+            const powerLevels = {
+                '0': 100,
+                '1': 50,
+                '2': 25,
+                '3': 12.5,
+                '4': 6.25,
+                'legendary': 3.125,
+                'epic': 1.5625,
+                'rare': 0.78125,
+                'uncommon': 0.390625,
+                'common': 0.1953125
+            };
+
+            while (hasMore) {
+                try {
+                    loadingElement.style.display = 'block';
+                    errorElement.style.display = 'none';
+                    
+                    const response = await fetch(`https://api.nearblocks.io/v1/nfts/darai.mintbase1.near/tokens?page=${page}&per_page=${perPage}`);
+                    const data = await response.json();
+
+                    if (data && data.tokens && data.tokens.length > 0) {
+                        const filteredData = data.tokens
+                            .filter(token => {
+                                if (!token.title) return false;
+                                const lowerTitle = token.title.toLowerCase();
+                                return !excludedTitles.some(excluded => lowerTitle.includes(excluded.toLowerCase())) &&
+                                       !excludedOwners.includes(token.asset.owner);
+                            })
+                            .map(token => {
+                                const titleLower = token.title.toLowerCase();
+                                let power = 0;
+                                for (const [key, value] of Object.entries(powerLevels)) {
+                                    if (titleLower.includes(key)) {
+                                        power = value;
+                                        break;
+                                    }
+                                }
+                                return {
+                                    title: token.title,
+                                    id: token.token || '-',
+                                    owner: token.asset.owner,
+                                    power: power
+                                };
+                            });
+
+                        allNFTs = allNFTs.concat(filteredData);
+                        page++;
+                    } else {
+                        hasMore = false;
+                    }
+                } catch (error) {
+                    console.error('Ошибка при загрузке данных:', error);
+                    errorElement.textContent = 'Произошла ошибка при загрузке данных. Пожалуйста, попробуйте позже.';
+                    errorElement.style.display = 'block';
+                    hasMore = false;
+                }
+            }
+
+            loadingElement.style.display = 'none';
+        }
+
+        function addAdditionalPowerRow() {
+            const listElement = document.getElementById('additionalPowerList');
+            const rowId = additionalPowerRows++;
+            
+            const row = document.createElement('div');
+            row.className = 'additional-power-row';
+            row.innerHTML = `
+                <input type="text" id="addressInput${rowId}" placeholder="Адрес">
+                <input type="number" id="powerInput${rowId}" placeholder="Мощность (%)" step="0.01">
+                <button class="delete-button" onclick="removeAdditionalPowerRow(${rowId})">✖</button>
+            `;
+            listElement.appendChild(row);
+        }
+
+        function removeAdditionalPowerRow(rowId) {
+            const row = document.querySelector(`#additionalPowerList .additional-power-row:nth-child(${rowId + 1})`);
+            if (row) {
+                row.remove();
+            }
+        }
+
+        function calculateRewards() {
+            const totalAllocation = parseFloat(document.getElementById('allocationInput').value);
+            let totalPower = allNFTs.reduce((sum, nft) => sum + nft.power, 0);
+
+            const ownerRewards = {};
+            allNFTs.forEach(nft => {
+                if (!ownerRewards[nft.owner]) {
+                    ownerRewards[nft.owner] = 0;
+                }
+                ownerRewards[nft.owner] += nft.power;
+            });
+
+            // Add rewards for additional power
+            for (let i = 0; i < additionalPowerRows; i++) {
+                const addressInput = document.getElementById(`addressInput${i}`);
+                const powerInput = document.getElementById(`powerInput${i}`);
+                if (addressInput && powerInput) {
+                    const address = addressInput.value;
+                    const power = parseFloat(powerInput.value);
+                    if (address && !isNaN(power)) {
+                        if (!ownerRewards[address]) {
+                            ownerRewards[address] = 0;
+                        }
+                        ownerRewards[address] += power;
+                        totalPower += power;
                     }
                 }
-            `;
-
-            try {
-                const response = await axios.post(url, { query }, {
-                    headers: { 'mb-api-key': 'anon' }
-                });
-                return response.data.data.mb_views_nft_tokens;
-            } catch (error) {
-                console.error('Ошибка:', error.response ? `${error.response.status} - ${error.response.statusText}` : error.message);
-                return null;
             }
+
+            const rewardPerPercent = totalAllocation / totalPower;
+
+            let rewardText = '';
+            Object.entries(ownerRewards).forEach(([owner, power]) => {
+                const reward = power * rewardPerPercent;
+                rewardText += `${owner};${reward.toFixed(2)}\n`;
+            });
+
+            document.getElementById('rewardsOutput').textContent = rewardText;
         }
 
-        function parseStakingPower(title) {
-            const mapping = {
-                '0': '100%',
-                '1': '50%',
-                '2': '25%',
-                '3': '12.5%',
-                '4': '6.25%',
-                'legendary': '3.125%',
-                'epic': '1.5625%',
-                'rare': '0.78125%',
-                'uncommon': '0.390625%',
-                'common': '0.1953125%'
-            };
-
-            const matchedKey = Object.keys(mapping).find(key => title.toLowerCase().includes(key));
-            return matchedKey ? mapping[matchedKey] : 'N/A';
-        }
-
-        function convertStakingPowerToNumber(stakingPower) {
-            const mapping = {
-                '100%': 100,
-                '50%': 50,
-                '25%': 25,
-                '12.5%': 12.5,
-                '6.25%': 6.25,
-                '3.125%': 3.125,
-                '1.5625%': 1.5625,
-                '0.78125%': 0.78125,
-                '0.390625%': 0.390625,
-                '0.1953125%': 0.1953125,
-            };
-
-            return mapping[stakingPower] || 0;
-        }
-
-        function shouldIncludeNFT(title, owner) {
-            const excludeWords = ['passport', 'egg', 'yupik - chiter', 'тест', 'boost'];
-            const excludeOwners = ['darai_nft.near', 'darai_collection.near'];
-            return !excludeWords.some(word => title ? title.toLowerCase().includes(word.toLowerCase()) : false) &&
-                   !excludeOwners.includes(owner);
-        }
-
-        async function updateRewards() {
-            const totalAllocation = parseFloat(document.getElementById('allocationInput').value);
-            const nftData = await fetchNFTData();
-            if (nftData) {
-                const ownerStakingPower = {};
-
-                nftData.forEach(nft => {
-                    if (nft.owner !== '0000000000000000000000000000000000000000000000000000000000000000' && 
-                        shouldIncludeNFT(nft.title, nft.owner)) {
-                        const stakingPower = parseStakingPower(nft.title);
-                        const stakingPowerValue = convertStakingPowerToNumber(stakingPower);
-
-                        if (!ownerStakingPower[nft.owner]) {
-                            ownerStakingPower[nft.owner] = 0;
-                        }
-                        ownerStakingPower[nft.owner] += stakingPowerValue;
-                    }
-                });
-
-                // Apply adjustments
-                const adjustments = document.querySelectorAll('.adjustment-group');
-                adjustments.forEach(adjustment => {
-                    const address = adjustment.querySelector('.address-input').value;
-                    const percentage = parseFloat(adjustment.querySelector('.percentage-input').value);
-                    if (address && !isNaN(percentage)) {
-                        if (!ownerStakingPower[address]) {
-                            ownerStakingPower[address] = 0;
-                        }
-                        ownerStakingPower[address] += percentage;
-                    }
-                });
-
-                const totalPower = Object.values(ownerStakingPower).reduce((acc, value) => acc + value, 0);
-                const rewardPerPercent = totalAllocation / totalPower;
-
-                let rewardText = '';
-                Object.entries(ownerStakingPower).forEach(([owner, totalPower]) => {
-                    const reward = (rewardPerPercent * totalPower).toFixed(2);
-                    rewardText += `${owner};${reward}\n`;
-                });
-
-                // Split rewards into groups of 100 lines
-                const rewardGroups = rewardText.split('\n').reduce((acc, line, index) => {
-                    if (index % 100 === 0) acc.push('');
-                    acc[acc.length - 1] += line + '\n';
-                    return acc;
-                }, []);
-
-                // Create output fields for each group
-                const container = document.getElementById('rewardsOutputContainer');
-                container.innerHTML = '';
-                rewardGroups.forEach((group, index) => {
-                    const outputField = document.createElement('textarea');
-                    outputField.className = 'rewards-output';
-                    outputField.readOnly = true;
-                    outputField.value = group.trim();
-                    container.appendChild(outputField);
-
-                    const copyButton = document.createElement('button');
-                    copyButton.textContent = 'Копировать';
-                    copyButton.onclick = () => copyRewards(outputField);
-                    container.appendChild(copyButton);
-                });
-            } else {
-                document.getElementById('rewardsOutputContainer').innerHTML = '<p>Нет доступных данных</p>';
-            }
-        }
-
-        function addAdjustment() {
-            const adjustmentGroup = document.createElement('div');
-            adjustmentGroup.className = 'adjustment-group';
-            adjustmentGroup.innerHTML = `
-                <input type="text" placeholder="Адрес" class="address-input">
-                <input type="number" placeholder="Процент" class="percentage-input">
-                <button class="remove-adjustment" onclick="removeAdjustment(this)">X</button>
-            `;
-            document.getElementById('adjustments').appendChild(adjustmentGroup);
-        }
-
-        function removeAdjustment(button) {
-            button.parentElement.remove();
-        }
-
-        function copyRewards(outputField) {
-            outputField.select();
-            document.execCommand('copy');
-            outputField.setSelectionRange(0, 0);
-            outputField.classList.add('copied');
-        }
-
-        // Initial update
-        updateRewards();
+        // Initialize
+        fetchNFTs();
+        addAdditionalPowerRow(); // Add one row by default
     </script>
 </body></html>
