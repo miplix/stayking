@@ -1,164 +1,197 @@
 
-<html><head><base href="https://websimcreation.com/"><title>NFT Rewards Calculator</title><style>
-    body {
-        font-family: Arial, sans-serif;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: #f0f0f0;
-    }
-    .header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-    h1 {
-        margin: 0;
-        flex-grow: 1;
-    }
-    .back-button {
-        padding: 10px 20px;
-        font-size: 16px;
-        background-color: rgba(52, 152, 219, 0.7);
-        color: white;
-        border: none;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-        border-radius: 20px;
-        transition: background-color 0.3s;
-        margin-right: 20px;
-    }
-    .back-button:hover {
-        background-color: rgba(41, 128, 185, 0.7);
-    }
-    .input-group {
-        margin-bottom: 15px;
-    }
-    input, button {
-        padding: 10px;
-        margin: 5px;
-        font-size: 16px;
-    }
-    button {
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        cursor: pointer;
-    }
-    button:hover {
-        background-color: #45a049;
-    }
-    #rewardsOutput {
-        white-space: pre-wrap;
-        background-color: white;
-        border: 1px solid #ddd;
-        padding: 10px;
-        height: 400px;
-        overflow-y: auto;
-        margin-bottom: 10px;
-        font-size: 14px;
-    }
-    #loading, #error {
-        margin-top: 20px;
-        font-weight: bold;
-    }
-    #error {
-        color: red;
-    }
-    .additional-power-container {
-        margin-top: 20px;
-    }
-    .additional-power-row {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-    .additional-power-row input {
-        flex: 1;
-        margin-right: 10px;
-    }
-    .delete-button {
-        background-color: #f44336;
-        color: white;
-        border: none;
-        cursor: pointer;
-        padding: 5px 10px;
-        font-size: 14px;
-    }
-    .add-button {
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        cursor: pointer;
-        padding: 10px 20px;
-        font-size: 16px;
-        margin-top: 10px;
-    }
-</style></head>
+<html>
+<head>
+    <base href="https://example.com">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>YupLand NFT Power Dashboard</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        h1 {
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        #results {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+            resize: none;
+            font-family: monospace;
+            background-color: #e2e8f0;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #cbd5e0;
+        }
+        .btn {
+            margin-top: 10px;
+            margin-right: 5px;
+            padding: 5px 10px;
+            font-size: 0.875rem;
+        }
+        #total-power {
+            font-weight: 500;
+            margin-top: 10px;
+        }
+        #progress-container {
+            display: none;
+            margin-top: 10px;
+        }
+        #blacklist-section {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+        }
+        #blacklist {
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: #e2e8f0;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #cbd5e0;
+        }
+        #manage-blacklist {
+            margin-top: 20px;
+        }
+        #manage-blacklist input {
+            margin-bottom: 10px;
+        }
+        @media (max-width: 576px) {
+            #results {
+                height: 200px;
+            }
+            .btn {
+                margin-right: 0;
+                margin-bottom: 5px;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
 <body>
-    <div class="header">
-        <a href="https://miplix.github.io/servises/" class="back-button">Назад</a>
-        <h1>NFT Rewards Calculator</h1>
+    <div class="container">
+        <h1 class="text-center">YupLand NFT Power Dashboard</h1>
+        
+        <div class="form-group">
+            <label for="allocation-input">Allocation (million):</label>
+            <input type="number" id="allocation-input" class="form-control" placeholder="Enter allocation amount" value="100" min="1">
+            <div id="total-power">Total Power: 0</div>
+        </div>
+
+        <div class="d-flex flex-wrap">
+            <button id="refresh-btn" class="btn btn-primary btn-sm">Refresh Data</button>
+            <button id="calculate-btn" class="btn btn-success btn-sm">Calculate</button>
+        </div>
+
+        <div id="progress-container">
+            <label for="progress-bar">Loading Data:</label>
+            <div class="progress">
+                <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+        </div>
+
+        <div class="form-group mt-3">
+            <label for="results">Results:</label>
+            <textarea id="results" class="form-control" readonly></textarea>
+            <button id="copy-btn" class="btn btn-info btn-sm mt-2">Copy</button>
+        </div>
+
+        <div id="blacklist-section">
+            <h5>Blacklisted Addresses:</h5>
+            <div id="blacklist">
+0000000000000000000000000000000000000000000000000000000000000000
+darai_mintbase1.near
+darai_collection.near
+darai_nft.near
+tashasorokina.tg
+serega40in.tg
+            </div>
+
+            <div id="manage-blacklist" class="mt-4">
+                <h6>Manage Blacklist:</h6>
+                <div class="input-group mb-2">
+                    <input type="text" id="new-blacklist-address" class="form-control" placeholder="Enter address to add">
+                    <div class="input-group-append">
+                        <button id="add-blacklist-btn" class="btn btn-outline-secondary btn-sm">Add</button>
+                    </div>
+                </div>
+                <div class="input-group mb-2">
+                    <input type="text" id="remove-blacklist-address" class="form-control" placeholder="Enter address to remove">
+                    <div class="input-group-append">
+                        <button id="remove-blacklist-btn" class="btn btn-outline-secondary btn-sm">Remove</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="input-group">
-        <label for="allocationInput">Общая аллокация:</label>
-        <input type="number" id="allocationInput" value="100000000">
-    </div>
-
-    <div class="additional-power-container">
-        <h3>Добавочная мощность</h3>
-        <div id="additionalPowerList"></div>
-        <button class="add-button" onclick="addAdditionalPowerRow()">Добавить</button>
-    </div>
-
-    <button onclick="calculateRewards()">Рассчитать награды</button>
-
-    <h2>Результат распределения наград</h2>
-    <div id="rewardsOutput"></div>
-
-    <div id="loading" style="display: none;">Загрузка данных...</div>
-    <div id="error" style="display: none;"></div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         let allNFTs = [];
-        let additionalPowerRows = 0;
+        let totalPower = 0;
+
+        let excludedOwners = [
+            '0000000000000000000000000000000000000000000000000000000000000000',
+            'darai_mintbase1.near',
+            'darai_collection.near',
+            'darai_nft.near',
+            'tashasorokina.tg',
+            'serega40in.tg'
+        ];
+
+        const excludedTitles = ['egg', 'passport', 'yupik - chiter', 'chest', 'press', 'тест', 'boost', 'mystical', 'Ellie (0th generation - Ancient)', 'Phi-So (0th generation - Ancient)'];
+
+        const powerLevels = {
+            '0': 100,
+            '1': 50,
+            '2': 25,
+            '3': 12.5,
+            '4': 6.25,
+            'legendary': 3.125,
+            'epic': 1.5625,
+            'rare': 0.78125,
+            'uncommon': 0.390625,
+            'common': 0.1953125
+        };
+
+        const API_KEY = '3E3387A5DF2B4D5EA0B9719BC5F2CA3E';
 
         async function fetchNFTs() {
             let page = 1;
             const perPage = 250;
             let hasMore = true;
-            const loadingElement = document.getElementById('loading');
-            const errorElement = document.getElementById('error');
-            
-            const excludedOwners = [
-                '0000000000000000000000000000000000000000000000000000000000000000',
-                'darai_nft.near',
-                'darai_collection.near'
-            ];
 
-            const excludedTitles = ['egg', 'passport', 'Yupik - Chiter', 'Chest', 'Press', 'тест', 'boost', 'mystical'];
+            allNFTs = [];
+            totalPower = 0;
+            updateTotalPower();
 
-            const powerLevels = {
-                '0': 100,
-                '1': 50,
-                '2': 25,
-                '3': 12.5,
-                '4': 6.25,
-                'legendary': 3.125,
-                'epic': 1.5625,
-                'rare': 0.78125,
-                'uncommon': 0.390625,
-                'common': 0.1953125
-            };
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.setAttribute('aria-valuenow', 0);
+            progressBar.textContent = '0%';
 
-            while (hasMore) {
+            while (hasMore && allNFTs.length < 1000) {
                 try {
-                    loadingElement.style.display = 'block';
-                    errorElement.style.display = 'none';
-                    
-                    const response = await fetch(`https://api.nearblocks.io/v1/nfts/darai.mintbase1.near/tokens?page=${page}&per_page=${perPage}`);
+                    const response = await fetch(`https://api.nearblocks.io/v1/nfts/darai.mintbase1.near/tokens?page=${page}&per_page=${perPage}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${API_KEY}`,
+                            'Accept': '*/*'
+                        }
+                    });
                     const data = await response.json();
 
                     if (data && data.tokens && data.tokens.length > 0) {
@@ -167,7 +200,7 @@
                                 if (!token.title) return false;
                                 const lowerTitle = token.title.toLowerCase();
                                 return !excludedTitles.some(excluded => lowerTitle.includes(excluded.toLowerCase())) &&
-                                       !excludedOwners.includes(token.asset.owner);
+                                       !excludedOwners.includes(token.asset.owner.toLowerCase());
                             })
                             .map(token => {
                                 const titleLower = token.title.toLowerCase();
@@ -178,6 +211,7 @@
                                         break;
                                     }
                                 }
+                                totalPower += power;
                                 return {
                                     title: token.title,
                                     id: token.token || '-',
@@ -188,83 +222,111 @@
 
                         allNFTs = allNFTs.concat(filteredData);
                         page++;
+
+                        const progress = Math.min((allNFTs.length / 1000) * 100, 100);
+                        progressBar.style.width = `${progress}%`;
+                        progressBar.setAttribute('aria-valuenow', progress);
+                        progressBar.textContent = `${Math.floor(progress)}%`;
+                        updateTotalPower();
                     } else {
                         hasMore = false;
                     }
                 } catch (error) {
-                    console.error('Ошибка при загрузке данных:', error);
-                    errorElement.textContent = 'Произошла ошибка при загрузке данных. Пожалуйста, попробуйте позже.';
-                    errorElement.style.display = 'block';
+                    console.error("Error fetching data:", error);
                     hasMore = false;
                 }
             }
 
-            loadingElement.style.display = 'none';
+            progressBar.style.width = '100%';
+            progressBar.setAttribute('aria-valuenow', 100);
+            progressBar.textContent = '100%';
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+            }, 500);
+
+            updateTotalPower();
         }
 
-        function addAdditionalPowerRow() {
-            const listElement = document.getElementById('additionalPowerList');
-            const rowId = additionalPowerRows++;
-            
-            const row = document.createElement('div');
-            row.className = 'additional-power-row';
-            row.innerHTML = `
-                <input type="text" id="addressInput${rowId}" placeholder="Адрес">
-                <input type="number" id="powerInput${rowId}" placeholder="Мощность (%)" step="0.01">
-                <button class="delete-button" onclick="removeAdditionalPowerRow(${rowId})">✖</button>
-            `;
-            listElement.appendChild(row);
-        }
-
-        function removeAdditionalPowerRow(rowId) {
-            const row = document.querySelector(`#additionalPowerList .additional-power-row:nth-child(${rowId + 1})`);
-            if (row) {
-                row.remove();
-            }
+        function updateTotalPower() {
+            document.getElementById('total-power').textContent = `Total Power: ${totalPower}`;
         }
 
         function calculateRewards() {
-            const totalAllocation = parseFloat(document.getElementById('allocationInput').value);
-            let totalPower = allNFTs.reduce((sum, nft) => sum + nft.power, 0);
-
-            const ownerRewards = {};
-            allNFTs.forEach(nft => {
-                if (!ownerRewards[nft.owner]) {
-                    ownerRewards[nft.owner] = 0;
-                }
-                ownerRewards[nft.owner] += nft.power;
-            });
-
-            // Add rewards for additional power
-            for (let i = 0; i < additionalPowerRows; i++) {
-                const addressInput = document.getElementById(`addressInput${i}`);
-                const powerInput = document.getElementById(`powerInput${i}`);
-                if (addressInput && powerInput) {
-                    const address = addressInput.value;
-                    const power = parseFloat(powerInput.value);
-                    if (address && !isNaN(power)) {
-                        if (!ownerRewards[address]) {
-                            ownerRewards[address] = 0;
-                        }
-                        ownerRewards[address] += power;
-                        totalPower += power;
-                    }
-                }
+            const allocationInput = document.getElementById('allocation-input').value;
+            const allocation = parseFloat(allocationInput) * 1000000;
+            if (isNaN(allocation) || allocation <= 0) {
+                alert('Please enter a valid allocation amount greater than 0');
+                return;
             }
 
-            const rewardPerPercent = totalAllocation / totalPower;
+            const addressMap = new Map();
 
-            let rewardText = '';
-            Object.entries(ownerRewards).forEach(([owner, power]) => {
-                const reward = power * rewardPerPercent;
-                rewardText += `${owner};${reward.toFixed(2)}\n`;
+            allNFTs.forEach(nft => {
+                if (!addressMap.has(nft.owner)) {
+                    addressMap.set(nft.owner, 0);
+                }
+                addressMap.set(nft.owner, addressMap.get(nft.owner) + nft.power);
             });
 
-            document.getElementById('rewardsOutput').textContent = rewardText;
+            const totalAllocatedPower = Array.from(addressMap.values()).reduce((a, b) => a + b, 0);
+            if (totalAllocatedPower === 0) {
+                alert('Total power is zero. Cannot calculate rewards.');
+                return;
+            }
+
+            const rewardPerUnitPower = allocation / totalAllocatedPower;
+            const resultsArray = [];
+
+            addressMap.forEach((power, address) => {
+                const reward = (power * rewardPerUnitPower).toFixed(2);
+                resultsArray.push(`${address};${reward}`);
+            });
+
+            const results = resultsArray.join('\n');
+            document.getElementById('results').value = results;
         }
 
-        // Initialize
+        document.getElementById('refresh-btn').addEventListener('click', fetchNFTs);
+        document.getElementById('calculate-btn').addEventListener('click', calculateRewards);
+        document.getElementById('copy-btn').addEventListener('click', function() {
+            const resultsElement = document.getElementById('results');
+            resultsElement.select();
+            document.execCommand('copy');
+        });
+
+        document.getElementById('add-blacklist-btn').addEventListener('click', function() {
+            const newAddress = document.getElementById('new-blacklist-address').value.trim().toLowerCase();
+            if (newAddress === '') {
+                alert('Please enter a valid address to add.');
+                return;
+            }
+            if (!excludedOwners.includes(newAddress)) {
+                excludedOwners.push(newAddress);
+                updateBlacklistDisplay();
+                document.getElementById('new-blacklist-address').value = '';
+            } else {
+                alert('Address is already in the blacklist.');
+            }
+        });
+
+        document.getElementById('remove-blacklist-btn').addEventListener('click', function() {
+            const removeAddress = document.getElementById('remove-blacklist-address').value.trim().toLowerCase();
+            const index = excludedOwners.indexOf(removeAddress);
+            if (index !== -1) {
+                excludedOwners.splice(index, 1);
+                updateBlacklistDisplay();
+                document.getElementById('remove-blacklist-address').value = '';
+            } else {
+                alert('Address not found in the blacklist.');
+            }
+        });
+
+        function updateBlacklistDisplay() {
+            const blacklistDiv = document.getElementById('blacklist');
+            blacklistDiv.textContent = excludedOwners.join('\n');
+        }
+
         fetchNFTs();
-        addAdditionalPowerRow(); // Add one row by default
     </script>
-</body></html>
+</body>
+</html>
