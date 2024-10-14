@@ -183,7 +183,7 @@ serega40in.tg
             progressBar.setAttribute('aria-valuenow', 0);
             progressBar.textContent = '0%';
 
-            while (hasMore && allNFTs.length < 1000) {
+            while (hasMore && allNFTs.length < 2000) {
                 try {
                     const response = await fetch(`https://api.nearblocks.io/v1/nfts/darai.mintbase1.near/tokens?page=${page}&per_page=${perPage}`, {
                         method: 'GET',
