@@ -1,332 +1,272 @@
 
-<html>
-<head>
-    <base href="https://example.com">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YupLand NFT Power Dashboard</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f8f9fa;
-            padding: 20px;
-        }
-        h1 {
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-        #results {
-            width: 100%;
-            height: 300px;
-            margin-top: 20px;
-            resize: none;
-            font-family: monospace;
-            background-color: #e2e8f0;
+<html><head><base href="." />
+<title>Stakingboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/graphql-request/5.0.0/graphql-request.umd.min.js"></script>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 10px;
+        background: #f5f5f5;
+        font-size: 14px;
+    }
+    .container {
+        width: 50vw;
+        max-width: 100%;
+        margin: 0 auto;
+        background: #f0f8ff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow-x: auto;
+    }
+    .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    .stat-box {
+        background: #e6f3ff;
+        padding: 10px;
+        border-radius: 6px;
+        font-size: 0.9em;
+    }
+    .reward-input {
+        margin: 15px 0;
+        padding: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: center;
+    }
+    .reward-input input {
+        padding: 6px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 120px;
+    }
+    textarea {
+        font-family: monospace;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #fff;
+        width: 100%;
+        height: 200px;
+        margin-bottom: 10px;
+    }
+    .power {
+        color: #2ecc71;
+        font-weight: bold;
+    }
+    .copy-button {
+        background: #2ecc71;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+    .copy-button:hover {
+        background: #27ae60;
+    }
+    .output-container {
+        margin-top: 15px;
+    }
+    .output-group {
+        margin-bottom: 20px;
+    }
+    @media (max-width: 600px) {
+        .container {
+            width: 95vw;
             padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #cbd5e0;
         }
-        .btn {
-            margin-top: 10px;
-            margin-right: 5px;
-            padding: 5px 10px;
-            font-size: 0.875rem;
+        .reward-input {
+            flex-direction: column;
+            align-items: flex-start;
         }
-        #total-power {
-            font-weight: 500;
-            margin-top: 10px;
-        }
-        #progress-container {
-            display: none;
-            margin-top: 10px;
-        }
-        #blacklist-section {
-            margin-top: 30px;
-            padding: 15px;
-            background-color: #ffffff;
-            border: 1px solid #cbd5e0;
-            border-radius: 5px;
-        }
-        #blacklist {
-            white-space: pre-wrap;
-            font-family: monospace;
-            background-color: #e2e8f0;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #cbd5e0;
-        }
-        #manage-blacklist {
-            margin-top: 20px;
-        }
-        #manage-blacklist input {
-            margin-bottom: 10px;
-        }
-        @media (max-width: 576px) {
-            #results {
-                height: 200px;
-            }
-            .btn {
-                margin-right: 0;
-                margin-bottom: 5px;
-                width: 100%;
-            }
-        }
-    </style>
+    }
+</style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center">YupLand NFT Power Dashboard</h1>
-        
-        <div class="form-group">
-            <label for="allocation-input">Allocation (million):</label>
-            <input type="number" id="allocation-input" class="form-control" placeholder="Enter allocation amount" value="100" min="1">
-            <div id="total-power">Total Power: 0</div>
+        <h1>Награды за стейкинг</h1>
+        <div class="summary-stats" id="summaryStats"></div>
+        <div class="reward-input">
+            <label>
+                Reward Volume (in Millions):
+                <input type="number" id="rewardVolume" value="100" min="0" step="1">
+            </label>
         </div>
-
-        <div class="d-flex flex-wrap">
-            <button id="refresh-btn" class="btn btn-primary btn-sm">Refresh Data</button>
-            <button id="calculate-btn" class="btn btn-success btn-sm">Calculate</button>
-        </div>
-
-        <div id="progress-container">
-            <label for="progress-bar">Loading Data:</label>
-            <div class="progress">
-                <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-            </div>
-        </div>
-
-        <div class="form-group mt-3">
-            <label for="results">Results:</label>
-            <textarea id="results" class="form-control" readonly></textarea>
-            <button id="copy-btn" class="btn btn-info btn-sm mt-2">Copy</button>
-        </div>
-
-        <div id="blacklist-section">
-            <h5>Blacklisted Addresses:</h5>
-            <div id="blacklist">
-0000000000000000000000000000000000000000000000000000000000000000
-darai_mintbase1.near
-darai_collection.near
-darai_nft.near
-tashasorokina.tg
-serega40in.tg
-            </div>
-
-            <div id="manage-blacklist" class="mt-4">
-                <h6>Manage Blacklist:</h6>
-                <div class="input-group mb-2">
-                    <input type="text" id="new-blacklist-address" class="form-control" placeholder="Enter address to add">
-                    <div class="input-group-append">
-                        <button id="add-blacklist-btn" class="btn btn-outline-secondary btn-sm">Add</button>
-                    </div>
-                </div>
-                <div class="input-group mb-2">
-                    <input type="text" id="remove-blacklist-address" class="form-control" placeholder="Enter address to remove">
-                    <div class="input-group-append">
-                        <button id="remove-blacklist-btn" class="btn btn-outline-secondary btn-sm">Remove</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div id="outputGroups"></div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const endpoint = 'https://graph.mintbase.xyz/mainnet';
+    const query = `
+        query MyQuery {
+            mb_views_nft_tokens(where: {nft_contract_id: {_eq: "darai.mintbase1.near"}}) {
+                owner
+                title
+                token_id
+            }
+        }
+    `;
 
-    <script>
-        let allNFTs = [];
+    const blacklist = [
+        '0000000000000000000000000000000000000000000000000000000000000000',
+        'darai_nft.near',
+        'darai_collection.near',
+        'a.mitte-orderbook.near'
+    ];
+
+    const titleBlacklist = [
+        'egg',
+        'passport',
+        'Yupik - Chiter',
+        'Chest',
+        'Press',
+        'тест',
+        'boost',
+        'mystical',
+        'Ellie (0th generation - Ancient)',
+        'Phi-So (0th generation - Ancient)'
+    ];
+
+    const powerValues = {
+        '0': 100,
+        '1': 50,
+        '2': 25,
+        '3': 12.5,
+        '4': 6.25,
+        'legendary': 3.125,
+        'epic': 1.5625,
+        'rare': 0.78125,
+        'uncommon': 0.390625,
+        'common': 0.1953125
+    };
+
+    function getPowerFromTitle(title) {
+        if (!title) return 0;
+        
+        for (const [key, value] of Object.entries(powerValues)) {
+            if (title.toLowerCase().includes(key.toLowerCase())) {
+                return value;
+            }
+        }
+        return 0;
+    }
+
+    async function fetchData() {
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'mb-api-key': 'anon'
+                },
+                body: JSON.stringify({ query })
+            });
+            
+            const data = await response.json();
+            const filteredTokens = data.data.mb_views_nft_tokens.filter(token => 
+                !blacklist.includes(token.owner) && 
+                !titleBlacklist.some(bannedTitle => 
+                    token.title && token.title.toLowerCase().includes(bannedTitle.toLowerCase())
+                )
+            );
+            displayResults(filteredTokens);
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('outputGroups').innerHTML = 'Error loading data. Please try again later.';
+            document.getElementById('summaryStats').innerHTML = '';
+        }
+    }
+
+    function calculateReward(power, totalPower, rewardVolume) {
+        return (rewardVolume * 1000000 * power) / (totalPower * 100) * 100;
+    }
+
+    function displayResults(tokens) {
+        const summaryStatsDiv = document.getElementById('summaryStats');
+        const rewardVolumeInput = document.getElementById('rewardVolume');
+        const outputGroupsDiv = document.getElementById('outputGroups');
+
         let totalPower = 0;
+        const uniqueOwners = new Set();
 
-        let excludedOwners = [
-            '0000000000000000000000000000000000000000000000000000000000000000',
-            'darai_mintbase1.near',
-            'darai_collection.near',
-            'darai_nft.near',
-            'tashasorokina.tg',
-            'serega40in.tg'
-        ];
+        tokens.forEach(token => {
+            const power = getPowerFromTitle(token.title);
+            totalPower += power;
+            uniqueOwners.add(token.owner);
+        });
 
-        const excludedTitles = ['egg', 'passport', 'yupik - chiter', 'chest', 'press', 'тест', 'boost', 'mystical', 'Ellie (0th generation - Ancient)', 'Phi-So (0th generation - Ancient)'];
+        summaryStatsDiv.innerHTML = `
+            <div class="stat-box">
+                <h3>Total NFTs</h3>
+                <div>${tokens.length}</div>
+            </div>
+            <div class="stat-box">
+                <h3>Total Power</h3>
+                <div class="power">${totalPower.toFixed(4).replace(/\.?0+$/, '')}%</div>
+            </div>
+            <div class="stat-box">
+                <h3>Unique Owners</h3>
+                <div>${uniqueOwners.size}</div>
+            </div>
+        `;
 
-        const powerLevels = {
-            '0': 100,
-            '1': 50,
-            '2': 25,
-            '3': 12.5,
-            '4': 6.25,
-            'legendary': 3.125,
-            'epic': 1.5625,
-            'rare': 0.78125,
-            'uncommon': 0.390625,
-            'common': 0.1953125
-        };
+        function updateOutput() {
+            const rewardVolume = parseFloat(rewardVolumeInput.value) || 100;
 
-        const API_KEY = '3E3387A5DF2B4D5EA0B9719BC5F2CA3E';
-
-        async function fetchNFTs() {
-            let page = 1;
-            const perPage = 250;
-            let hasMore = true;
-
-            allNFTs = [];
-            totalPower = 0;
-            updateTotalPower();
-
-            const progressContainer = document.getElementById('progress-container');
-            const progressBar = document.getElementById('progress-bar');
-            progressContainer.style.display = 'block';
-            progressBar.style.width = '0%';
-            progressBar.setAttribute('aria-valuenow', 0);
-            progressBar.textContent = '0%';
-
-            while (hasMore && allNFTs.length < 2000) {
-                try {
-                    const response = await fetch(`https://api.nearblocks.io/v1/nfts/darai.mintbase1.near/tokens?page=${page}&per_page=${perPage}`, {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${API_KEY}`,
-                            'Accept': '*/*'
-                        }
-                    });
-                    const data = await response.json();
-
-                    if (data && data.tokens && data.tokens.length > 0) {
-                        const filteredData = data.tokens
-                            .filter(token => {
-                                if (!token.title) return false;
-                                const lowerTitle = token.title.toLowerCase();
-                                return !excludedTitles.some(excluded => lowerTitle.includes(excluded.toLowerCase())) &&
-                                       !excludedOwners.includes(token.asset.owner.toLowerCase());
-                            })
-                            .map(token => {
-                                const titleLower = token.title.toLowerCase();
-                                let power = 0;
-                                for (const [key, value] of Object.entries(powerLevels)) {
-                                    if (titleLower.includes(key)) {
-                                        power = value;
-                                        break;
-                                    }
-                                }
-                                totalPower += power;
-                                return {
-                                    title: token.title,
-                                    id: token.token || '-',
-                                    owner: token.asset.owner,
-                                    power: power
-                                };
-                            });
-
-                        allNFTs = allNFTs.concat(filteredData);
-                        page++;
-
-                        const progress = Math.min((allNFTs.length / 1000) * 100, 100);
-                        progressBar.style.width = `${progress}%`;
-                        progressBar.setAttribute('aria-valuenow', progress);
-                        progressBar.textContent = `${Math.floor(progress)}%`;
-                        updateTotalPower();
-                    } else {
-                        hasMore = false;
-                    }
-                } catch (error) {
-                    console.error("Error fetching data:", error);
-                    hasMore = false;
+            const ownerStats = tokens.reduce((acc, token) => {
+                const power = getPowerFromTitle(token.title);
+                if (!acc[token.owner]) {
+                    acc[token.owner] = {totalPower: power};
+                } else {
+                    acc[token.owner].totalPower += power;
                 }
+                return acc;
+            }, {});
+
+            const outputLines = Object.entries(ownerStats)
+                .map(([owner, stats]) => {
+                    const reward = calculateReward(stats.totalPower, totalPower, rewardVolume);
+                    return `${owner};${reward.toFixed(2)}`;
+                })
+                .sort();
+
+            outputGroupsDiv.innerHTML = '';
+            
+            for (let i = 0; i < outputLines.length; i += 200) {
+                const chunk = outputLines.slice(i, i + 200);
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'output-group';
+                
+                const textarea = document.createElement('textarea');
+                textarea.readOnly = true;
+                textarea.value = chunk.join('\n');
+                
+                const copyButton = document.createElement('button');
+                copyButton.className = 'copy-button';
+                copyButton.textContent = 'Copy';
+                copyButton.onclick = () => {
+                    textarea.select();
+                    document.execCommand('copy');
+                };
+                
+                groupDiv.appendChild(textarea);
+                groupDiv.appendChild(copyButton);
+                outputGroupsDiv.appendChild(groupDiv);
             }
-
-            progressBar.style.width = '100%';
-            progressBar.setAttribute('aria-valuenow', 100);
-            progressBar.textContent = '100%';
-            setTimeout(() => {
-                progressContainer.style.display = 'none';
-            }, 500);
-
-            updateTotalPower();
         }
 
-        function updateTotalPower() {
-            document.getElementById('total-power').textContent = `Total Power: ${totalPower}`;
-        }
+        rewardVolumeInput.addEventListener('input', updateOutput);
+        updateOutput();
+    }
 
-        function calculateRewards() {
-            const allocationInput = document.getElementById('allocation-input').value;
-            const allocation = parseFloat(allocationInput) * 1000000;
-            if (isNaN(allocation) || allocation <= 0) {
-                alert('Please enter a valid allocation amount greater than 0');
-                return;
-            }
-
-            const addressMap = new Map();
-
-            allNFTs.forEach(nft => {
-                if (!addressMap.has(nft.owner)) {
-                    addressMap.set(nft.owner, 0);
-                }
-                addressMap.set(nft.owner, addressMap.get(nft.owner) + nft.power);
-            });
-
-            const totalAllocatedPower = Array.from(addressMap.values()).reduce((a, b) => a + b, 0);
-            if (totalAllocatedPower === 0) {
-                alert('Total power is zero. Cannot calculate rewards.');
-                return;
-            }
-
-            const rewardPerUnitPower = allocation / totalAllocatedPower;
-            const resultsArray = [];
-
-            addressMap.forEach((power, address) => {
-                const reward = (power * rewardPerUnitPower).toFixed(2);
-                resultsArray.push(`${address};${reward}`);
-            });
-
-            const results = resultsArray.join('\n');
-            document.getElementById('results').value = results;
-        }
-
-        document.getElementById('refresh-btn').addEventListener('click', fetchNFTs);
-        document.getElementById('calculate-btn').addEventListener('click', calculateRewards);
-        document.getElementById('copy-btn').addEventListener('click', function() {
-            const resultsElement = document.getElementById('results');
-            resultsElement.select();
-            document.execCommand('copy');
-        });
-
-        document.getElementById('add-blacklist-btn').addEventListener('click', function() {
-            const newAddress = document.getElementById('new-blacklist-address').value.trim().toLowerCase();
-            if (newAddress === '') {
-                alert('Please enter a valid address to add.');
-                return;
-            }
-            if (!excludedOwners.includes(newAddress)) {
-                excludedOwners.push(newAddress);
-                updateBlacklistDisplay();
-                document.getElementById('new-blacklist-address').value = '';
-            } else {
-                alert('Address is already in the blacklist.');
-            }
-        });
-
-        document.getElementById('remove-blacklist-btn').addEventListener('click', function() {
-            const removeAddress = document.getElementById('remove-blacklist-address').value.trim().toLowerCase();
-            const index = excludedOwners.indexOf(removeAddress);
-            if (index !== -1) {
-                excludedOwners.splice(index, 1);
-                updateBlacklistDisplay();
-                document.getElementById('remove-blacklist-address').value = '';
-            } else {
-                alert('Address not found in the blacklist.');
-            }
-        });
-
-        function updateBlacklistDisplay() {
-            const blacklistDiv = document.getElementById('blacklist');
-            blacklistDiv.textContent = excludedOwners.join('\n');
-        }
-
-        fetchNFTs();
-    </script>
-</body>
-</html>
+    fetchData();
+</script>
+</body></html>
