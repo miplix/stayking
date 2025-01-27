@@ -1,4 +1,3 @@
-
 <html><head><base href="." />
 <title>Stakingboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/graphql-request/5.0.0/graphql-request.umd.min.js"></script>
@@ -11,7 +10,7 @@
         font-size: 14px;
     }
     .container {
-        width: 50vw;
+        width: 25vw;
         max-width: 100%;
         margin: 0 auto;
         background: #f0f8ff;
@@ -22,7 +21,7 @@
     }
     .summary-stats {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
         gap: 10px;
         margin-bottom: 15px;
     }
@@ -55,6 +54,7 @@
         width: 100%;
         height: 200px;
         margin-bottom: 10px;
+        font-size: 12px;
     }
     .power {
         color: #2ecc71;
@@ -68,9 +68,16 @@
         border-radius: 4px;
         cursor: pointer;
         margin-top: 10px;
+        margin-right: 10px;
+        transition: background-color 0.3s;
     }
-    .copy-button:hover {
-        background: #27ae60;
+    .copy-button.copied {
+        background: #e74c3c;
+    }
+    .lines-count {
+        display: inline-block;
+        margin-left: 10px;
+        color: #666;
     }
     .output-container {
         margin-top: 15px;
@@ -78,14 +85,59 @@
     .output-group {
         margin-bottom: 20px;
     }
-    @media (max-width: 600px) {
+    h1 {
+        font-size: 1.5em;
+        margin-bottom: 15px;
+    }
+    .reset-button {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-bottom: 15px;
+        width: 100%;
+        transition: background-color 0.3s;
+    }
+    .reset-button:hover {
+        background: #2980b9;
+    }
+    @media (max-width: 768px) {
         .container {
             width: 95vw;
             padding: 10px;
+            margin: 0 auto;
         }
         .reward-input {
             flex-direction: column;
             align-items: flex-start;
+        }
+        .reward-input input {
+            width: 100%;
+            max-width: none;
+        }
+        .summary-stats {
+            grid-template-columns: 1fr;
+        }
+        h1 {
+            font-size: 1.2em;
+        }
+        textarea {
+            font-size: 14px;
+            height: 150px;
+        }
+        .copy-button {
+            width: 100%;
+            margin-right: 0;
+        }
+        .lines-count {
+            display: block;
+            margin-top: 5px;
+            text-align: center;
+        }
+        .reset-button {
+            margin-bottom: 10px;
         }
     }
 </style>
@@ -93,6 +145,7 @@
 <body>
     <div class="container">
         <h1>Награды за стейкинг</h1>
+        <button id="resetColors" class="reset-button">Сбросить цвет</button>
         <div class="summary-stats" id="summaryStats"></div>
         <div class="reward-input">
             <label>
@@ -102,7 +155,6 @@
         </div>
         <div id="outputGroups"></div>
     </div>
-
 <script>
     const endpoint = 'https://graph.mintbase.xyz/mainnet';
     const query = `
@@ -120,9 +172,11 @@
         'darai_nft.near',
         'darai_collection.near',
         'a.mitte-orderbook.near',
-        'darai_team.near',
         'widget.near',
-        'darai_ng.near',
+        'darai_fane.near',
+        'alchemistshop.near',
+        'sofiya_562-hot.tg',
+        'darai_team.near',
         'darai_yupalka.near'
     ];
 
@@ -197,6 +251,14 @@
         const summaryStatsDiv = document.getElementById('summaryStats');
         const rewardVolumeInput = document.getElementById('rewardVolume');
         const outputGroupsDiv = document.getElementById('outputGroups');
+        const resetButton = document.getElementById('resetColors');
+
+        resetButton.addEventListener('click', () => {
+            document.querySelectorAll('.copy-button').forEach(button => {
+                button.classList.remove('copied');
+                button.style.backgroundColor = '#2ecc71';
+            });
+        });
 
         let totalPower = 0;
         const uniqueOwners = new Set();
@@ -244,8 +306,8 @@
 
             outputGroupsDiv.innerHTML = '';
             
-            for (let i = 0; i < outputLines.length; i += 200) {
-                const chunk = outputLines.slice(i, i + 200);
+            for (let i = 0; i < outputLines.length; i += 100) {
+                const chunk = outputLines.slice(i, i + 100);
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'output-group';
                 
@@ -256,13 +318,21 @@
                 const copyButton = document.createElement('button');
                 copyButton.className = 'copy-button';
                 copyButton.textContent = 'Copy';
+                
+                const linesCount = document.createElement('span');
+                linesCount.className = 'lines-count';
+                linesCount.textContent = `Lines: ${chunk.length}`;
+                
                 copyButton.onclick = () => {
                     textarea.select();
                     document.execCommand('copy');
+                    copyButton.classList.add('copied');
+                    copyButton.style.backgroundColor = '#e74c3c';
                 };
                 
                 groupDiv.appendChild(textarea);
                 groupDiv.appendChild(copyButton);
+                groupDiv.appendChild(linesCount);
                 outputGroupsDiv.appendChild(groupDiv);
             }
         }
